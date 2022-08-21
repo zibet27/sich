@@ -1,5 +1,5 @@
-import { createAtom } from './reactive/atom';
-import { Atom, AtomicObject } from './types';
+import { createAtom } from './atom';
+import { Atom, AtomicObject } from '../types';
 
 type UpdateStore<T extends object> = (
     next: Partial<T> | ((store: T) => Partial<T>)

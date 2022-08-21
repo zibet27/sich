@@ -1,18 +1,12 @@
 import { Atom, AtomOptions, AtomRes, SetFn, Subscriber } from '../types';
 import { equal } from '../utils';
 
-const baseOptions: AtomOptions<any, any> = {
-    compare: true,
-    readonly: false,
-    equalsFn: equal,
-} as const;
-
 const createAtom = <T, R extends boolean = false>(
     initial: T,
-    options: AtomOptions<T, R> = baseOptions
+    options: AtomOptions<T, R> = {}
 ) => {
     let value = initial;
-    const { compare, readonly, equalsFn = equal } = options;
+    const { compare = true, readonly = false, equalsFn = equal } = options;
     const subscribers: Set<Subscriber<T>> = new Set();
 
     const atom = {
@@ -32,7 +26,7 @@ const createAtom = <T, R extends boolean = false>(
 
     const set: SetFn<T> = (next) => {
         const val = next instanceof Function ? next(value) : next;
-        if (compare === true && equalsFn(value, val)) return;
+        if (compare && equalsFn(value, val)) return;
         value = val;
         for (const s of subscribers) s(val);
     };

@@ -24,14 +24,15 @@ const createForm = <K extends string, I extends Initial<K> = Initial<K, string>>
     const initial = initIsAtom && initialValues.value;
 
     const getInitial = (k: K) => {
-        if (!initIsAtom && isAtomic((initialValues as AtomicObject<I>)[k])) {
+        if (initIsAtom) return initial[k];
+        if (isAtomic((initialValues as AtomicObject<I>)[k])) {
             const initAtom = (initialValues as AtomicObject<I>)[k];
             if (!initialized) {
                 initAtom.subscribe((v) => models[k].set(v as F[K]));
             }
             return initAtom.value;
         }
-        return initIsAtom ? initial[k] : (initialValues as I)[k];
+        return (initialValues as I)[k];
     }
 
     for (const key of keys) {

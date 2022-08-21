@@ -41,11 +41,10 @@ const createMemo = <T>(computations: () => T, dependencies: Atom<any>[]) => {
 
 const createRef = <E extends HTMLElement>(): Ref<E> => ({ current: null });
 
-const createResource = <T extends any>(request: () => Promise<T>, initial?: T) => {
+const createResource = <T>(request: () => Promise<T>, initial?: T) => {
     const loading = createAtom(false);
     const error = createAtom<any>(null);
     const response = createAtom<T | undefined>(initial);
-
     const fetch = () => {
         loading.set(true);
         return request()
@@ -56,7 +55,7 @@ const createResource = <T extends any>(request: () => Promise<T>, initial?: T) =
             .catch(error.set)
             .finally(() => loading.set(false));
     }
-
+    onMount(fetch);
     return [response, { refetch: fetch, loading, error }] as const;
 }
 

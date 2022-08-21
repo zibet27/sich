@@ -1,4 +1,4 @@
-import { Component } from './types';
+import { Component } from '../types';
 
 interface Context<T> {
     id: symbol;

@@ -7,8 +7,8 @@ export * from './components/For';
 export * from './components/If';
 export * from './components/Switch';
 
-export * from './context';
-export * from './store';
+export * from './reactive/context';
+export * from './reactive/store';
 
 export { createApp, h, createFragment } from './renderer';
 
