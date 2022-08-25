@@ -1,4 +1,4 @@
-import { Atom } from '../types';
+import { ReadonlyAtom } from '../types';
 import { createAtom } from './atom';
 
 type Handler = () => void;
@@ -22,14 +22,14 @@ const onAppMounted = () => {
     isMounted = true;
 };
 
-const createEffect = (effect: () => void, dependencies: Atom<any>[]) => {
+const createEffect = (effect: () => void, dependencies: ReadonlyAtom<any>[]) => {
     onMount(effect);
     for (const dependency of dependencies) {
         dependency.subscribe(() => effect());
     }
 };
 
-const createMemo = <T>(computations: () => T, dependencies: Atom<any>[]) => {
+const createMemo = <T>(computations: () => T, dependencies: ReadonlyAtom<any>[]) => {
     const result = createAtom(computations());
     for (const dependency of dependencies) {
         dependency.subscribe(() => {

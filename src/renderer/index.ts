@@ -90,6 +90,8 @@ export const {
     cloneNode,
     modifyClone,
     insertNode,
+    insertBefore,
+    insertAfter,
     removeNode,
     replaceWith,
     createElement,

@@ -1,4 +1,4 @@
-import { AtomicProps, Child } from './lib/types';
+import { AtomicProps, Child } from './types';
 
 declare global {
     type DomElement = Element;

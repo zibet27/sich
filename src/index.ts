@@ -22,4 +22,6 @@ export { createApp, h, createFragment } from './renderer';
 
 // use:model or something like this (directives)
 
+// do not use clone in for loop
+
 // return render fn if needed

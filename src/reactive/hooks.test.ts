@@ -1,10 +1,7 @@
 import { describe, expect, test, vi } from "vitest";
 import { createAtom } from "./atom";
 import { createEffect, createMemo, createRef, createResource, onAppMounted, onMount } from "./hooks";
-
-const wait = (ms: number) => new Promise((resolve) => {
-    setTimeout(resolve, ms)
-});
+import { wait } from "../utils";
 
 describe('hooks', () => {
     // TODO: test in createApp

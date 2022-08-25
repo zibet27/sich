@@ -7,6 +7,12 @@ const getFirstChild = (node: E): Element => {
     return isArray(node) ? getFirstChild(node[0]) : node;
 }
 
+export const getNextSibling = (el: JSX.Element): Element => {
+    return isArray(el)
+        ? getNextSibling(el[el.length - 1])
+        : el.nextSibling as Element;
+}
+
 export class WebRenderer implements BaseRenderer<E> {
     createElement = (tag: string) => {
         return document.createElement(tag);
@@ -23,15 +29,18 @@ export class WebRenderer implements BaseRenderer<E> {
         if (isArray(child)) parent.append(...flat(child));
         else parent.appendChild(child);
     }
-    insertBefore = (parent: Element, before: E, nextChild: E) => {
+    insertBefore = (parent: Element, child: E, before: E) => {
         const pointer = getFirstChild(before);
-        if (isArray(nextChild)) {
-            for (const node of flat(nextChild)) {
+        if (isArray(child)) {
+            for (const node of flat(child)) {
                 parent.insertBefore(node, pointer);
             }
         } else {
-            parent.insertBefore(nextChild, pointer);
+            parent.insertBefore(child, pointer);
         }
+    }
+    insertAfter = (parent: Element, child: E, after: E) => {
+        this.insertBefore(parent, child, getNextSibling(after));
     }
     removeNode = (element: E | E[]) => {
         if (isArray(element)) {
@@ -47,7 +56,7 @@ export class WebRenderer implements BaseRenderer<E> {
     replaceWith = (curElement: E, nextElement: E) => {
         if (isArray(curElement) || isArray(nextElement)) {
             const parent = this.getParent(curElement);
-            this.insertBefore(parent, curElement, nextElement);
+            this.insertBefore(parent, nextElement, curElement);
             this.removeNode(curElement);
         } else {
             curElement.replaceWith(nextElement);

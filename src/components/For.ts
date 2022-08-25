@@ -1,30 +1,31 @@
 import { setCloneEnabled } from '../global';
 import {
-    createEmptyNode,
-    getParent,
-    insertNode,
-    removeNode,
-    replaceWith
+    createEmptyNode, getParent, insertAfter, removeNode, replaceWith
 } from '../renderer';
 import { Atom, RenderFn } from '../types';
-import { equal, NodesCache } from '../utils';
+import { equal, NodesCache, toNode } from '../utils';
 
 interface Props<T> {
     each: Atom<T[]>;
     equalsFn?: (prev: T, next: T) => boolean;
-    children: RenderFn<T>
+    children: RenderFn<T, true>;
+    fallback?: () => JSX.Element | string;
 }
 
-
-export const For = <T>({ each, children, equalsFn }: Props<T>) => {
+export const For = <T>({ each, children, equalsFn = equal, fallback }: Props<T>) => {
     setCloneEnabled(true);
 
     let arr = each.value;
-    let parentNode: ParentNode | null;
-    const eq = equalsFn ?? equal;
-    const root = createEmptyNode();
+    let parentNode: Element;
     const cache = new NodesCache(children);
     let nodes = arr.map(cache.create);
+    let $root: JSX.Element;
+    const root = () => {
+        if (!$root) {
+            $root = (fallback && toNode(fallback())) ?? createEmptyNode();
+        }
+        return $root;
+    };
 
     const exit = () => {
         setCloneEnabled(false);
@@ -36,22 +37,21 @@ export const For = <T>({ each, children, equalsFn }: Props<T>) => {
         const curLength = arr.length;
         const newLength = nextArr.length;
 
-        if (!parentNode && nodes[0]) {
-            parentNode = getParent(nodes[0]);
+        if (!parentNode) {
+            parentNode = getParent(nodes[0] ?? root());
         }
 
         // fast create
         if (curLength === 0) {
             const newNodes = nextArr.map(cache.create);
-            const parent = parentNode || getParent(root);
-            if (parent) insertNode(parent as Element, newNodes);
+            replaceWith(root(), newNodes);
             nodes = newNodes;
             return exit();
         }
 
         // fast clear
         if (newLength === 0) {
-            removeNode(nodes);
+            replaceWith(nodes, root());
             cache.clear();
             nodes = [];
             return exit();
@@ -60,7 +60,7 @@ export const For = <T>({ each, children, equalsFn }: Props<T>) => {
         const replacedItems = new Set<T>();
 
         for (let i = 0; i < newLength; i++) {
-            if (eq(nextArr[i], arr[i])) {
+            if (equalsFn(nextArr[i], arr[i])) {
                 continue;
             }
             const nextValue = nextArr[i];
@@ -73,10 +73,8 @@ export const For = <T>({ each, children, equalsFn }: Props<T>) => {
                 replaceWith(nodes[i], nextNode);
                 nodes[i] = nextNode;
             } else {
-                const parent = parentNode || getParent(root);
-                if (!parent) continue;
+                insertAfter(parentNode, nextNode, nodes.at(-1)!);
                 nodes.push(nextNode);
-                insertNode(parent as Element, nextNode);
             }
         }
 
@@ -92,5 +90,6 @@ export const For = <T>({ each, children, equalsFn }: Props<T>) => {
     });
 
     setCloneEnabled(false);
-    return nodes.length > 0 ? nodes : root;
+    return nodes.length > 0 ? nodes : root();
 };
+

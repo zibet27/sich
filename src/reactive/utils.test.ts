@@ -37,6 +37,21 @@ describe('reactive utils', () => {
         expect(tSubscriber).toBeCalled();
     });
 
+    test('useIndex with atomic index', () => {
+        const arr = createAtom([1, 2, 3, 4]);
+        const index = createAtom(1);
+        const el = useIndex(arr, index);
+        const subscriber = vi.fn();
+        el.subscribe(subscriber);
+        expect(el.value).toBe(2);
+        index.set(3);
+        expect(el.value).toBe(4);
+        expect(subscriber).toBeCalledTimes(1);
+        arr.set([4, 3, 2, 1]);
+        expect(el.value).toBe(1);
+        expect(subscriber).toBeCalledTimes(2);
+    });
+
     test('useObject', () => {
         const obj = createAtom({ val1: 1, val2: 2 });
         const { val1, val2 } = useObject(obj);

@@ -1,42 +1,45 @@
 import { createEmptyNode, replaceWith } from "../renderer";
-import { Atom, Component } from "../types";
+import { Atom } from "../types";
+import { toNode } from "../utils";
 
-export interface SwitchProps<T> {
-    value: Atom<T>;
-    fallback?: Component<{}>;
+export interface SwitchProps {
+    fallback?: () => JSX.Element | string;
     children: any;
 }
 
-interface MatchProps<T> {
-    when: T;
-    and?: Atom<boolean>;
+interface MatchProps {
+    when: Atom<any>;
     children: () => JSX.Element;
 }
 
-const Match = <T>(props: MatchProps<T>): JSX.Element => {
+const Match = (props: MatchProps): JSX.Element => {
     // @ts-ignore
     return props;
 }
 
-const Switch = <T>(props: SwitchProps<T>) => {
-    const render = (value: T) => {
-        for (const child of props.children) {
-            if (child.when !== value) continue;
-            if (child.and && !child.and.value) continue;
-            return child.children();
+const Switch = ({ fallback, children }: SwitchProps) => {
+    const empty = () => (
+        (fallback && toNode(fallback())) ?? createEmptyNode()
+    );
+
+    const render = () => {
+        for (const child of children) {
+            if (child.when.value) {
+                return toNode(child.children());
+            }
         }
-        return (
-            props.fallback && props.fallback({ children: [] })
-        ) ?? createEmptyNode();
+        return empty();
     }
 
-    let current = render(props.value.value);
+    let current = render();
 
-    props.value.subscribe((next) => {
-        const nextChild = render(next);
-        replaceWith(current, nextChild);
-        current = nextChild;
-    });
+    for (const child of children) {
+        child.when.subscribe(() => {
+            const nextChild = render();
+            replaceWith(current, nextChild);
+            current = nextChild;
+        });
+    }
 
     return current;
 }

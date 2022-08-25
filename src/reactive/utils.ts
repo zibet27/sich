@@ -1,5 +1,5 @@
-import { Atom, AtomicObject } from "../types";
-import { createAtom } from "./atom";
+import { Atom, Atomic, AtomicObject } from "../types";
+import { createAtom, isAtomic } from "./atom";
 
 const from = <R, T>(atom: Atom<T>, listener: (value: T) => R) => {
     const result = createAtom(listener(atom.value));
@@ -9,9 +9,19 @@ const from = <R, T>(atom: Atom<T>, listener: (value: T) => R) => {
     return result;
 }
 
-const useIndex = <T>(arr: Atom<T[]>, index: number) => {
-    const atom = createAtom(arr.value[index]);
-    arr.subscribe((val) => atom.set(val[index]));
+const useIndex = <T>(arr: Atom<T[]>, index: Atomic<number>) => {
+    const isIndexAtomic = isAtomic(index);
+    let indexNumber = isIndexAtomic ? index.value : index;
+    const atom = createAtom(arr.value[indexNumber]);
+    arr.subscribe((val: T[]) => {
+        atom.set(val[indexNumber]);
+    });
+    if (isIndexAtomic) {
+        index.subscribe((nextIndex) => {
+            atom.set(arr.value[nextIndex]);
+            indexNumber = nextIndex;
+        });
+    }
     return atom;
 }
 

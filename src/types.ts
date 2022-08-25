@@ -44,4 +44,5 @@ export type NextFn<T> = (current: T) => T;
 
 export type Subscriber<T> = (updatedValue: T) => void;
 
-export type RenderFn<T> = (item: T, index: ReadonlyAtom<number>) => JSX.Element;
+export type RenderFn<T, EnableStr = false> =
+    (item: T, index: ReadonlyAtom<number>) => EnableStr extends true ? JSX.Element | string : JSX.Element;
