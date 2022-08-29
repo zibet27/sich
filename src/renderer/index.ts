@@ -1,9 +1,10 @@
 import { CloneEnabled } from '../global';
 import { isAtomic } from '../reactive/atom';
 import { onAppMounted } from '../reactive/hooks';
-import { AtomicProps, Component, BasicObject, Child } from '../types';
+import { AtomicProps, BasicObject, Child, Component } from '../types';
 import { isArray } from '../utils';
 import { addAtom, bindAtomicChildren, bindProps } from './bind';
+import { applyDirectives } from './directives';
 import { WebRenderer } from './web-renderer';
 
 const applyProps = <T extends BasicObject>(
@@ -69,6 +70,7 @@ const h = <P extends BasicObject>(
             props.ref.current = el;
             delete props.ref;
         }
+        applyDirectives(el, props);
         applyProps(el, props);
     }
     if (children) {

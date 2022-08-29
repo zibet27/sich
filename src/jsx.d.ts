@@ -8,6 +8,7 @@ declare global {
         Partial<AtomicProps<Omit<E, 'children' | 'innerHTML'>>>
         & RefProp<E>
         & { children?: Child | Child[] };
+    type DomInput<E extends JSX.Element> = Dom<E> & { $model?: Atom<any> }
 
     namespace JSX {
         interface IntrinsicElements {
@@ -22,9 +23,9 @@ declare global {
             span: Dom<HTMLSpanElement>;
             a: Dom<HTMLAnchorElement>;
             p: Dom<HTMLParagraphElement>;
-            input: Dom<HTMLInputElement>;
+            input: DomInput<HTMLInputElement>;
             label: Dom<HTMLLabelElement>;
-            select: Dom<HTMLSelectElement>;
+            select: DomInput<HTMLSelectElement>;
             option: Dom<HTMLOptionElement>;
             form: Dom<HTMLFormElement>;
         }

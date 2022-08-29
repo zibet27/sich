@@ -11,6 +11,7 @@ export * from './reactive/context';
 export * from './reactive/store';
 
 export { createApp, h, createFragment } from './renderer';
+export { declareDirective } from './renderer/directives';
 
 // TODO:
 
@@ -19,8 +20,6 @@ export { createApp, h, createFragment } from './renderer';
 // add onDestroy hook
 
 // create working loop
-
-// use:model or something like this (directives)
 
 // do not use clone in for loop
 

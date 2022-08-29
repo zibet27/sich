@@ -361,9 +361,6 @@ describe('Testing each with indexes and atomic props', () => {
         <div>
             <For each={list} fallback={() => <span>Hi</span>}>
                 {(item, i) => {
-                    i.subscribe(() => {
-                        console.log(i.value);
-                    });
                     return (
                         <span style={{ color: toColor(item) }}>
                             {item}
