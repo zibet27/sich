@@ -1,80 +1,50 @@
-import { flat, isArray } from "../utils";
-import { BaseRenderer, ModifiedCloneFn } from "./renderer";
+import { isArray } from "../utils";
+import { RendererOptions } from "./renderer";
 
-type E = Element | E[];
-
-const getFirstChild = (node: E): Element => {
-    return isArray(node) ? getFirstChild(node[0]) : node;
-}
-
-export const getNextSibling = (el: JSX.Element): Element => {
-    return isArray(el)
-        ? getNextSibling(el[el.length - 1])
-        : el.nextSibling as Element;
-}
-
-export class WebRenderer implements BaseRenderer<E> {
-    createElement = (tag: string) => {
-        return document.createElement(tag);
-    }
-    createTextNode = (text: string): Element => {
+export const webRendererOptions: RendererOptions<Node> = {
+    createElement(name) {
+        return document.createElement(name);
+    },
+    createTextNode(value) {
+        return document.createTextNode(value);
+    },
+    getFirstChild(node) {
+        return node.firstChild as Node;
+    },
+    getNextSibling(node) {
+        return node.nextSibling as Node;
+    },
+    getParentNode(node) {
+        return node.parentNode as Node;
+    },
+    insertNode(parent, node, before) {
+        if (before) parent.insertBefore(node, before);
+        else parent.appendChild(node);
+    },
+    replaceText(textNode, value) {
+        textNode.textContent = value;
+    },
+    removeNode(node) {
         // @ts-ignore
-        return document.createTextNode(text);
-    }
-    createEmptyNode = (): E => {
-        // @ts-ignore
-        return document.createTextNode('');
-    }
-    insertNode = (parent: Element, child: E) => {
-        if (isArray(child)) parent.append(...flat(child));
-        else parent.appendChild(child);
-    }
-    insertBefore = (parent: Element, child: E, before: E) => {
-        const pointer = getFirstChild(before);
-        if (isArray(child)) {
-            for (const node of flat(child)) {
-                parent.insertBefore(node, pointer);
-            }
-        } else {
-            parent.insertBefore(child, pointer);
-        }
-    }
-    insertAfter = (parent: Element, child: E, after: E) => {
-        this.insertBefore(parent, child, getNextSibling(after));
-    }
-    removeNode = (element: E | E[]) => {
-        if (isArray(element)) {
-            for (const e of flat(element)) e.remove();
-        } else {
-            element.remove();
-        }
-    }
-    getParent = (el: E): Element => {
-        // @ts-ignore
-        return isArray(el) ? this.getParent(el[0]) : el.parentNode;
-    }
-    replaceWith = (curElement: E, nextElement: E) => {
-        if (isArray(curElement) || isArray(nextElement)) {
-            const parent = this.getParent(curElement);
-            this.insertBefore(parent, nextElement, curElement);
-            this.removeNode(curElement);
-        } else {
-            curElement.replaceWith(nextElement);
-        }
-    }
-    cloneNode = (node: E, deep?: boolean): E => {
-        if (isArray(node)) {
-            return node.map((e) => this.cloneNode(e, deep));
-        }
-        return node.cloneNode(deep) as E;
-    }
-    modifyClone = (node: E, cloneFn: ModifiedCloneFn<E>) => {
-        if (isArray(node)) {
-            for (const n of node) this.modifyClone(n, cloneFn);
+        node.remove();
+    },
+    cloneNode(node, deep) {
+        return node.cloneNode(deep);
+    },
+    modifyClone(node, modifiedCloneFn) {
+        const initialClone = node.cloneNode.bind(node);
+        node.cloneNode = modifiedCloneFn(initialClone);
+    },
+    setProperty(node: any, name, value) {
+        if (!isArray(name)) {
+            node[name] = value;
             return;
         }
-        const initialClone = node.cloneNode.bind(node);
-        // @ts-ignore
-        node.cloneNode = cloneFn(initialClone);
+        let item = node;
+        const lastKey = name.at(-1)!;
+        for (let i = 0; i < name.length - 1; i++) {
+            item = item[name[i]];
+        }
+        item[lastKey] = value;
     }
-}
+};

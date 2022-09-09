@@ -1,6 +1,6 @@
 import { setCloneEnabled } from '../global';
 import {
-    createEmptyNode, getParent, insertAfter, removeNode, replaceWith
+    createEmptyNode, getParent, insertAfter, remove, replaceWith
 } from '../renderer';
 import { Atom, RenderFn } from '../types';
 import { equal, NodesCache, toNode } from '../utils';
@@ -16,7 +16,7 @@ export const For = <T>({ each, children, equalsFn = equal, fallback }: Props<T>)
     setCloneEnabled(true);
 
     let arr = each.value;
-    let parentNode: Element;
+    let parentNode: JSX.Element;
     const cache = new NodesCache(children);
     let nodes = arr.map(cache.create);
     let $root: JSX.Element;
@@ -82,7 +82,7 @@ export const For = <T>({ each, children, equalsFn = equal, fallback }: Props<T>)
 
         if (curLength > newLength) {
             for (let i = newLength; i < curLength; i++) {
-                removeNode(nodes.pop()!);
+                remove(nodes.pop()!);
             }
         }
 

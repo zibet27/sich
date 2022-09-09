@@ -1,18 +1,18 @@
 import { isAtomic } from "../reactive/atom";
 import { Atom, BasicObject } from "../types";
 
-type Directive = (el: HTMLElement, propValue: any) => BasicObject;
+type Directive = (el: Element, propValue: any) => BasicObject;
 
 const directives = {} as Record<string, Directive>;
 
 const declareDirective = (name: string, directive: Directive) => {
-    if (!name.startsWith('$')) {
+    if (name[0] !== '$') {
         return console.warn('Directive name should start with $');
     }
     directives[name] = directive;
 }
 
-const applyDirectives = (el: HTMLElement, props: BasicObject) => {
+const applyDirectives = (el: Element, props: BasicObject) => {
     const data: BasicObject = {};
     for (const dirName in directives) {
         if (dirName in props) {
@@ -25,7 +25,7 @@ const applyDirectives = (el: HTMLElement, props: BasicObject) => {
 
 type InputEl = HTMLInputElement | HTMLSelectElement;
 
-const $model = (el: HTMLElement, atom: Atom<string>): BasicObject => {
+const $model = (el: Element, atom: Atom<string>): BasicObject => {
     if (!isAtomic(atom)) return {};
     return (el as InputEl).type === 'checkbox'
         ? {

@@ -1,4 +1,4 @@
-import { applyProps, cloneNode, insertNode, modifyClone } from '.';
+import { applyProps, cloneNode, insert, modifyClone, replaceText } from '.';
 import { Atom, AtomicProps } from '../types';
 import { isArray } from '../utils';
 
@@ -15,11 +15,11 @@ const addAtom = <T>(node: El, atom: Atom<T>, index: number) => {
 };
 
 const bindProps = <T extends object>(
-    parent: Record<string, any>,
+    parent: Element,
     props: AtomicProps<T>
 ) => {
-    modifyClone(parent as El, (clone) => (deep = false) => {
-        const node = clone(deep);
+    modifyClone(parent, (clone) => (deep = false) => {
+        const node = clone(deep) as Element;
         applyProps(node, props);
         return node;
     });
@@ -35,7 +35,7 @@ const bindAtomicChildren = (parent: Element) => {
         const node = clone(deep) as Element;
         for (const index of indexes) {
             atoms[+index].subscribe((updated) => {
-                node.childNodes[+index].textContent = updated;
+                replaceText(node.childNodes[+index] as Element, updated);
             });
         }
         return node;
@@ -52,7 +52,7 @@ const bindAtomicClone = (parent: El) => {
             const clone = (start ? cloneParent(false) : cloneNode(node, false)) as Element;
             const children = node.childNodes;
             for (let i = 0; i < children.length; i++) {
-                insertNode(clone, cloneWithChildren(children[i] as Element));
+                insert(clone, cloneWithChildren(children[i] as Element));
             }
             return clone;
         };

@@ -1,7 +1,7 @@
 /**
  * @vitest-environment jsdom
  */
-import { h, createFragment, insertNode } from '../renderer';
+import { h, createFragment, insert } from '../renderer';
 import { describe, expect, test } from 'vitest';
 import { createAtom } from '../reactive/atom';
 import { from } from '../reactive/utils';
@@ -117,7 +117,7 @@ describe('Test top level switch control flow', () => {
     ) as Element;
 
     test('Create switch control flow', () => {
-        insertNode(div, Component);
+        insert(div, Component);
         expect(div.innerHTML).toBe('fallback');
         count.set(1);
         expect(div.innerHTML).toBe('1');

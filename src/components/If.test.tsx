@@ -22,5 +22,5 @@ test('If Else components', () => {
     expression.set(false);
     expect(onTrue).toBeCalledTimes(1);
     expect(onFalse).toBeCalledTimes(1);
-    expect(parent.textContent).toBe("False");
+    expect(parent.textContent).toBe('False');
 });

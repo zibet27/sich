@@ -1,15 +1,38 @@
-export interface BaseRenderer<E> {
-    createElement(tag: string): E;
-    createTextNode(text: string): E;
-    createEmptyNode(): E;
-    getParent(node: E): E;
-    insertNode(parent: E, child: E | E[]): void;
-    removeNode(node: E | E[]): void;
-    replaceWith(curNode: E | E[], nextNode: E | E[]): void;
-    cloneNode(node: E, deep?: boolean): E;
-    modifyClone(node: E, cloneFn: ModifiedCloneFn<E>): void;
-}
-
 export type ModifiedCloneFn<E> = (initialClone: CloneFn<E>) => CloneFn<E>;
 
 export type CloneFn<E> = (deep?: boolean) => E;
+
+interface BaseRendererOptions<NodeType> {
+    createElement(tag: string): NodeType;
+    createTextNode(value: string): NodeType;
+    replaceText(textNode: NodeType, value: string): void;
+    setProperty(node: NodeType, key: string | string[], value: any): void;
+    cloneNode(node: NodeType, deep?: boolean): NodeType;
+    modifyClone(node: NodeType, modifyClone: ModifiedCloneFn<NodeType>): void;
+}
+
+export interface RendererOptions<NodeType> extends BaseRendererOptions<NodeType> {
+    insertNode(parent: NodeType, node: NodeType, before?: NodeType): void;
+    removeNode(node: NodeType): void;
+    getParentNode(node: NodeType): NodeType;
+    getFirstChild(node: NodeType): NodeType;
+    getNextSibling(node: NodeType): NodeType;
+}
+
+export interface Renderer<NodeType> extends BaseRendererOptions<NodeType> {
+    createEmptyNode(): NodeType;
+    getParent(node: NodeType): NodeType;
+    insert(parent: NodeType, child: NodeType): void;
+    insertBefore(
+        parent: NodeType,
+        child: NodeType,
+        before: NodeType,
+    ): void;
+    insertAfter(
+        parent: NodeType,
+        child: NodeType,
+        after: NodeType,
+    ): void;
+    remove(node: NodeType): void;
+    replaceWith(curNode: NodeType, nextNode: NodeType): void;
+}

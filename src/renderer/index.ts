@@ -4,28 +4,31 @@ import { onAppMounted } from '../reactive/hooks';
 import { AtomicProps, BasicObject, Child, Component } from '../types';
 import { isArray } from '../utils';
 import { addAtom, bindAtomicChildren, bindProps } from './bind';
+import { createRenderer } from './createRenderer';
 import { applyDirectives } from './directives';
-import { WebRenderer } from './web-renderer';
+import { RendererOptions } from './renderer';
+import { webRendererOptions } from './web-renderer';
 
 const applyProps = <T extends BasicObject>(
-    parent: BasicObject,
-    props: AtomicProps<T>
+    parent: Element,
+    props: AtomicProps<T>,
+    prevKeys = [] as string[]
 ) => {
     for (const prop in props) {
         const value = props[prop];
+        const keys = [...prevKeys, prop];
         try {
             if (isAtomic(value)) {
-                parent[prop] = value.value;
-                value.subscribe((next: string) => {
-                    parent[prop] = next;
+                value.subscribe((nextVal: any) => {
+                    setProperty(parent, keys, nextVal);
                 });
-            } else if (typeof value === 'object' && !isArray(value)) {
-                applyProps(parent[prop], value);
-            } else {
-                parent[prop] = value;
+            } else if (typeof value === 'object') {
+                applyProps(parent, value, keys);
+                return;
             }
+            setProperty(parent, keys, value?.value ?? value);
         } catch (err) {
-            console.warn(`Failed to applyProp ${prop} = ${value}`);
+            console.warn(`Failed to applyProp ${prevKeys.join('.')}.${prop} = ${value}`);
         }
     };
 }
@@ -39,15 +42,13 @@ const appendChild = (parent: Element, child: Child, index = 0) => {
     }
     if (isAtomic(child)) {
         const node = createTextNode(child.value);
-        child.subscribe((updated) => {
-            node.textContent = updated;
-        });
-        insertNode(parent, node);
+        child.subscribe(replaceText.bind(null, node));
+        insert(parent, node);
         if (CloneEnabled) addAtom(parent, child, index);
     } else if (child instanceof Node) {
-        insertNode(parent, child);
+        insert(parent, child);
     } else {
-        insertNode(parent, createTextNode(child as string));
+        insert(parent, createTextNode(child as string));
     }
 };
 
@@ -64,7 +65,7 @@ const h = <P extends BasicObject>(
     if (typeof tag === 'function') {
         return tag({ ...props, children: prepareChildren(children) });
     }
-    const el = createElement(tag);
+    const el = createElement(tag) as Element;
     if (props) {
         if (props.ref) {
             props.ref.current = el;
@@ -85,21 +86,23 @@ const h = <P extends BasicObject>(
 
 export const createFragment: Component<{}> = (p) => p.children;
 
-const renderer = new WebRenderer();
+const webRenderer = createRenderer<JSX.Element>(webRendererOptions as RendererOptions<JSX.Element>);
 
 export const {
     getParent,
     cloneNode,
     modifyClone,
-    insertNode,
+    insert,
     insertBefore,
     insertAfter,
-    removeNode,
+    remove,
     replaceWith,
+    replaceText,
+    setProperty,
     createElement,
     createTextNode,
     createEmptyNode,
-} = renderer;
+} = webRenderer;
 
 const createApp = (root: Element, app: Component<{}>) => {
     appendChild(root, h(app, {}));
