@@ -1,62 +1,95 @@
-import { toNode } from '.';
+import { isArray, toNode } from '.';
 import { createAtom } from '../reactive/atom';
-import { cloneNode } from '../renderer';
-import { bindAtomicClone } from '../renderer/bind';
-import { ReadonlyAtom, RenderFn } from '../types';
+import { RenderFn } from '../types';
 
 const readonly = { readonly: true } as const;
 
 type E = JSX.Element;
+type SetIndexFn = (value: number) => void;
 
 class NodesCache<T> {
-    #cache = new Map<T, E>();
-    #indexes = new Map<T, ReadonlyAtom<number>>();
+    nodes: E[];
+    #cache = new Map<T, E[]>();
+    #nextCache = new Map<T, E[]>();
+    #indexes = new Map<T, SetIndexFn | SetIndexFn[]>();
 
-    constructor(private readonly render: RenderFn<T, true>) { }
+    constructor(
+        private readonly render: RenderFn<T, true>,
+        private readonly equalsFn: (prev: T, next: T) => boolean,
+        initial: T[],
+    ) {
+        this.nodes = initial.map(this.create);
+    }
 
-    get = (item: T, index: number) => {
-        const saved = this.#cache.get(item);
-        return saved
-            ? this.clone(saved, item, index)
-            : this.create(item, index);
-    };
-
-    clone = (node: E, item: T, index: number) => {
-        const [nextIndex, setNextIndex] = createAtom(-1, readonly);
-        const curIndex = this.#indexes.get(item)!;
-        const start = curIndex.subscribers.size;
-        const clone = cloneNode(node);
-        let i = 0;
-        for (const subscriber of curIndex.subscribers) {
-            if (i++ < start) continue;
-            nextIndex.subscribe(subscriber);
-            curIndex.unsubscribe(subscriber);
-        }
-        setNextIndex(index);
-        return clone;
-    };
-
-    create = (item: T, index: number) => {
-        const [atomicIndex] = createAtom(index, readonly);
+    private create = (item: T, index: number) => {
+        const [atomicIndex, setIndex] = createAtom(index, readonly);
         const node = toNode(this.render(item, atomicIndex));
-        this.#indexes.set(item, atomicIndex);
-        this.#cache.set(item, node);
-        bindAtomicClone(node);
+        this.#indexes.set(item, setIndex);
+        this.#nextCache.set(item, [node]);
         return node;
     };
 
-    clear = () => {
-        this.#cache.clear();
-        this.#indexes.clear();
+    private clone(nodes: E[], item: T, index: number) {
+        const node = nodes.pop()!;
+        this.changeIndex(item, index, nodes.length);
+        this.setToNextCache(item, node);
+        return node;
     }
 
-    delete = (iterator: Iterable<T>) => {
-        for (const item of iterator) {
-            this.#cache.delete(item);
-            this.#indexes.delete(item);
-        }
+    private setToNextCache(item: T, node: E) {
+        const saved = this.#nextCache.get(item);
+        if (!saved) this.#nextCache.set(item, [node]);
+        else saved.push(node);
     };
+
+    private changeIndex(item: T, nextIndex: number, itemIndex: number) {
+        const setIndex = this.#indexes.get(item)!;
+        if (isArray(setIndex)) setIndex[itemIndex](nextIndex);
+        else setIndex(nextIndex);
+    }
+
+    private clearNextCache() {
+        this.#cache = this.#nextCache;
+        this.#nextCache = new Map();
+    }
+
+    map(arr: T[], nextArr: T[]) {
+        const curLength = arr.length;
+        const newLength = nextArr.length;
+
+        // fast create
+        if (curLength === 0) {
+            const nextNodes = nextArr.map(this.create);
+            this.clearNextCache();
+            return nextNodes;
+        }
+        // fast clear
+        if (newLength === 0) {
+            this.#cache.clear();
+            this.#indexes.clear();
+            return [];
+        }
+
+        let nextValue: T;
+        const nextNodes = new Array<E>(newLength);
+
+        for (let i = 0; i < newLength; i++) {
+            nextValue = nextArr[i];
+            if (this.equalsFn(nextValue, arr[i])) {
+                this.setToNextCache(nextValue, this.nodes[i]);
+                this.#cache.get(nextValue)?.pop();
+                nextNodes[i] = this.nodes[i];
+                continue;
+            }
+            const nodes = this.#cache.get(nextValue);
+            nextNodes[i] = nodes?.length
+                ? this.clone(nodes, nextValue, i)
+                : this.create(nextValue, i);
+        }
+
+        this.clearNextCache();
+        return nextNodes;
+    }
 }
 
 export { NodesCache };
-

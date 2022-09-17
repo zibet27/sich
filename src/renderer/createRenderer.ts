@@ -1,71 +1,54 @@
-import { flat, isArray } from '../utils';
-import { ModifiedCloneFn, Renderer, RendererOptions } from './renderer';
+import { isArray } from '../utils';
+import { Renderer, RendererOptions } from './renderer';
 
-export const createRenderer = <NodeType>(self: RendererOptions<NodeType>): Renderer<NodeType> => {
-    const getFirstChild = (node: NodeType): NodeType => {
-        return isArray(node) ? getFirstChild(node[0]) : node;
-    };
-    const getNextSibling = (node: NodeType): NodeType => {
+const getFirstElement = <N>(node: N): N => {
+    return isArray(node) ? getFirstElement(node[0]) : node;
+};
+
+const forEach = <N>(node: N | N[], fn: (n: N) => void) => {
+    if (!isArray(node)) return fn(node);
+    for (const n of node) {
+        if (isArray(n)) forEach(n, fn);
+        else fn(n);
+    }
+}
+
+export const createRenderer = <N>(self: RendererOptions<N>): Renderer<N> => {
+    const getNextSibling = (node: N): N => {
         return isArray(node)
             ? getNextSibling(node[node.length - 1])
             : self.getNextSibling(node);
     };
-    const getParent = (node: NodeType): NodeType => {
+    const getParent = (node: N): N => {
         return isArray(node) ? getParent(node[0]) : self.getParentNode(node);
     };
 
     const createEmptyNode = () => {
         return self.createTextNode('');
     };
-    const insert = (parent: NodeType, child: NodeType) => {
-        if (isArray(child)) {
-            child.forEach(insert.bind(null, parent));
-        } else self.insertNode(parent, child);
+    const insert = (parent: N, child: N) => {
+        forEach(child, (n) => self.insertNode(parent, n));
     };
-    const insertBefore = (
-        parent: NodeType,
-        child: NodeType,
-        before: NodeType,
-    ) => {
-        const nodeBefore = getFirstChild(before);
-        if (isArray(child)) {
-            for (const node of flat(child)) {
-                self.insertNode(parent, node, nodeBefore);
-            }
-        } else {
-            self.insertNode(parent, child, nodeBefore);
-        }
+
+    const insertBefore = (parent: N, child: N, before: N) => {
+        const nodeBefore = getFirstElement(before);
+        forEach(child, (node) => {
+            self.insertNode(parent, node, nodeBefore);
+        });
     };
-    const insertAfter = (
-        parent: NodeType,
-        child: NodeType,
-        after: NodeType,
-    ) => {
+    const insertAfter = (parent: N, child: N, after: N) => {
         insertBefore(parent, child, getNextSibling(after));
     };
 
-    const remove = (node: NodeType) => {
-        if (isArray(node)) node.forEach(remove);
-        else self.removeNode(node);
+    const remove = (node: N) => {
+        forEach(node, self.removeNode);
     };
-    const replaceWith = (curNode: NodeType, nextNode: NodeType) => {
-        const parent = getParent(curNode);
-        insertBefore(parent, nextNode, curNode);
+
+    const replaceWith = (curNode: N, nextNode: N, parent = getParent(curNode)) => {
+        const nextSibling = getNextSibling(curNode);
         remove(curNode);
-    };
-    const cloneNode = (node: NodeType, deep = false): NodeType => {
-        // @ts-ignore
-        return isArray(node)
-            ? node.map((e) => cloneNode(e, deep))
-            : self.cloneNode(node, deep);
-    };
-    const modifyClone = (
-        node: NodeType,
-        cloneFn: ModifiedCloneFn<NodeType>,
-    ) => {
-        if (isArray(node)) {
-            for (const n of node) modifyClone(n, cloneFn);
-        } else self.modifyClone(node, cloneFn);
+        if (nextSibling) insertBefore(parent, nextNode, nextSibling);
+        else insert(parent, nextNode);
     };
 
     return {
@@ -77,7 +60,5 @@ export const createRenderer = <NodeType>(self: RendererOptions<NodeType>): Rende
         insertAfter,
         remove,
         replaceWith,
-        cloneNode,
-        modifyClone,
     };
 };

@@ -7,8 +7,6 @@ interface BaseRendererOptions<NodeType> {
     createTextNode(value: string): NodeType;
     replaceText(textNode: NodeType, value: string): void;
     setProperty(node: NodeType, key: string | string[], value: any): void;
-    cloneNode(node: NodeType, deep?: boolean): NodeType;
-    modifyClone(node: NodeType, modifyClone: ModifiedCloneFn<NodeType>): void;
 }
 
 export interface RendererOptions<NodeType> extends BaseRendererOptions<NodeType> {
@@ -34,5 +32,5 @@ export interface Renderer<NodeType> extends BaseRendererOptions<NodeType> {
         after: NodeType,
     ): void;
     remove(node: NodeType): void;
-    replaceWith(curNode: NodeType, nextNode: NodeType): void;
+    replaceWith(curNode: NodeType, nextNode: NodeType, parent?: NodeType): void;
 }

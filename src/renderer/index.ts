@@ -1,9 +1,7 @@
-import { CloneEnabled } from '../global';
 import { isAtomic } from '../reactive/atom';
 import { onAppMounted } from '../reactive/hooks';
 import { AtomicProps, BasicObject, Child, Component } from '../types';
 import { isArray } from '../utils';
-import { addAtom, bindAtomicChildren, bindProps } from './bind';
 import { createRenderer } from './createRenderer';
 import { applyDirectives } from './directives';
 import { RendererOptions } from './renderer';
@@ -33,18 +31,15 @@ const applyProps = <T extends BasicObject>(
     };
 }
 
-const appendChild = (parent: Element, child: Child, index = 0) => {
+const appendChild = (parent: Element, child: Child) => {
     if (isArray(child)) {
-        for (let i = 0; i < child.length; i++) {
-            appendChild(parent, child[i], i);
-        }
+        for (const c of child) appendChild(parent, c);
         return;
     }
     if (isAtomic(child)) {
         const node = createTextNode(child.value);
         child.subscribe(replaceText.bind(null, node));
         insert(parent, node);
-        if (CloneEnabled) addAtom(parent, child, index);
     } else if (child instanceof Node) {
         insert(parent, child);
     } else {
@@ -77,10 +72,6 @@ const h = <P extends BasicObject>(
     if (children) {
         appendChild(el, children);
     }
-    if (CloneEnabled) {
-        bindProps(el, props);
-        bindAtomicChildren(el);
-    }
     return el;
 };
 
@@ -90,8 +81,6 @@ const webRenderer = createRenderer<JSX.Element>(webRendererOptions as RendererOp
 
 export const {
     getParent,
-    cloneNode,
-    modifyClone,
     insert,
     insertBefore,
     insertAfter,

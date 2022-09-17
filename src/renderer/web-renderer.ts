@@ -28,20 +28,13 @@ export const webRendererOptions: RendererOptions<Node> = {
         // @ts-ignore
         node.remove();
     },
-    cloneNode(node, deep) {
-        return node.cloneNode(deep);
-    },
-    modifyClone(node, modifiedCloneFn) {
-        const initialClone = node.cloneNode.bind(node);
-        node.cloneNode = modifiedCloneFn(initialClone);
-    },
     setProperty(node: any, name, value) {
         if (!isArray(name)) {
             node[name] = value;
             return;
         }
         let item = node;
-        const lastKey = name.at(-1)!;
+        const lastKey = name[name.length - 1];
         for (let i = 0; i < name.length - 1; i++) {
             item = item[name[i]];
         }
